@@ -131,6 +131,7 @@ function SightingPointMarker({ sighting }) {
   const latitude = Number(sighting.latitude);
   const longitude = Number(sighting.longitude);
   const popupTitle = `${sighting.city || 'Unknown city'} • ${sighting.shapeName || 'unknown shape'}`;
+  const commentText = sighting.comments || 'No comments';
 
   return (
     <Marker position={[latitude, longitude]} icon={mapMarkerIcon}>
@@ -142,6 +143,8 @@ function SightingPointMarker({ sighting }) {
         {sighting.countryCode ? `Country: ${sighting.countryCode.toUpperCase()}` : 'Country: unknown'}
         <br />
         Coordinates: {latitude.toFixed(3)}, {longitude.toFixed(3)}
+        <br />
+        Comment: {commentText}
       </Popup>
     </Marker>
   );
