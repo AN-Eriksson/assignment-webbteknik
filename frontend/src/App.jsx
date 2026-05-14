@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Cell,
   CartesianGrid,
   Line,
   LineChart,
@@ -11,6 +10,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
+import SightingMap from './components/SightingMap.jsx';
 
 const API_BASE = '';
 const LIST_PAGE_SIZE = 10;
@@ -64,7 +64,11 @@ export default function App() {
         percentage: total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0
       }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 12);
+      .slice(0, 12)
+      .map((entry, index) => ({
+        ...entry,
+        fill: PIE_COLORS[index % PIE_COLORS.length]
+      }));
   }, [chartSightings]);
 
   const monthlyChartData = useMemo(() => {
@@ -262,11 +266,7 @@ export default function App() {
                   cy="50%"
                   outerRadius={110}
                   label={({ payload }) => `${payload.shape} (${payload.percentage}%)`}
-                >
-                  {shapeShareData.map((entry, index) => (
-                    <Cell key={entry.shape} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
+                />
                 <Tooltip formatter={(value, name, item) => [`${value} sightings`, `${item?.payload?.shape || name}`]} />
               </PieChart>
             </ResponsiveContainer>
@@ -290,6 +290,12 @@ export default function App() {
             </ResponsiveContainer>
           </div>
         )}
+      </section>
+
+      <section className="panel">
+        <h2>Map view</h2>
+        <p className="helper-text">Pins are based on the same filtered sample as the charts, using the available coordinates.</p>
+        {!loading && !error && <SightingMap sightings={chartSightings} />}
       </section>
 
       <section className="panel">
