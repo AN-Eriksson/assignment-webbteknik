@@ -1,3 +1,39 @@
+# UFO Dashboard
+
+Minimal Spring Boot + React dashboard for UFO sightings.
+
+## Run locally
+
+Backend:
+
+```bash
+./gradlew bootRun
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Visualizations
+
+- Pie chart for shape share
+- Line chart for sightings over time
+- OpenStreetMap pin map for sightings with coordinates
+
+## Performance notes
+
+- The list uses pagination.
+- The charts use a bounded sample of sightings.
+- The map loads sightings for the visible viewport and clusters nearby pins.
+
+## Testing
+
+`src/test/resources/application.properties` provides dummy OAuth and API values so `./gradlew test` can run without local secrets.
+
 # Assignment Webbteknik
 
 ## Overview

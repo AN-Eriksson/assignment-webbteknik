@@ -6,10 +6,24 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:8080',
-      '/oauth2': 'http://localhost:8080',
-      '/login': 'http://localhost:8080',
-      '/logout': 'http://localhost:8080'
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        credentials: 'include'
+      },
+      '/oauth2': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/login': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/logout': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        followRedirects: false
+      }
     }
   }
 });

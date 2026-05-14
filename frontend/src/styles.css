@@ -74,6 +74,23 @@ p {
   white-space: nowrap;
 }
 
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.greeting {
+  color: #e5e7eb;
+  font-weight: 500;
+}
+
+.button-logout {
+  background: #64748b;
+  color: #e5e7eb;
+}
+
 .panel {
   margin-top: 1.5rem;
   padding: 1.5rem;
@@ -156,6 +173,29 @@ p {
   color: #94a3b8;
 }
 
+.map-status {
+  margin: 0 0 0.65rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.map-control {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.map-control input[type='range'] {
+  width: 100%;
+  accent-color: #38bdf8;
+}
+
+.map-control small {
+  color: #94a3b8;
+}
+
 .leaflet-container {
   background: #0f172a;
 }
@@ -231,6 +271,15 @@ pre {
   }
 
   .button {
+    width: 100%;
+  }
+
+  .user-section {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .button-logout {
     width: 100%;
   }
 

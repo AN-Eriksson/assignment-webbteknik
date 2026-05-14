@@ -17,6 +17,7 @@ import me.andreaseriksson.ufodashboard.api.client.UfoApiClient;
 import me.andreaseriksson.ufodashboard.api.dto.LocationResponse;
 import me.andreaseriksson.ufodashboard.api.dto.ShapeResponse;
 import me.andreaseriksson.ufodashboard.api.dto.SightingResponse;
+import me.andreaseriksson.ufodashboard.service.SightingViewportService;
 
 /**
  * Controller for bridging frontend requests to the UFO Sightings API.
@@ -28,10 +29,12 @@ import me.andreaseriksson.ufodashboard.api.dto.SightingResponse;
 public class SightingsController {
 
     private final UfoApiClient ufoApiClient;
+    private final SightingViewportService sightingViewportService;
 
     @Autowired
-    public SightingsController(UfoApiClient ufoApiClient) {
+    public SightingsController(UfoApiClient ufoApiClient, SightingViewportService sightingViewportService) {
         this.ufoApiClient = ufoApiClient;
+        this.sightingViewportService = sightingViewportService;
     }
 
     /**
@@ -48,6 +51,29 @@ public class SightingsController {
             @RequestParam(required = false) String shapeName) {
 
         List<SightingResponse> sightings = ufoApiClient.getSightings(page, size, city, state, countryCode, shapeName);
+        return ResponseEntity.ok(sightings);
+    }
+
+    /**
+     * Get sightings inside the visible map viewport.
+     */
+    @GetMapping("/sightings/map")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<List<SightingResponse>> getSightingsInViewport(
+            @RequestParam(required = false) Double north,
+            @RequestParam(required = false) Double south,
+            @RequestParam(required = false) Double east,
+            @RequestParam(required = false) Double west,
+            @RequestParam(required = false) String countryCode,
+            @RequestParam(defaultValue = "3000") Integer limit) {
+
+        List<SightingResponse> sightings = sightingViewportService.getSightingsInViewport(
+                north,
+                south,
+                east,
+                west,
+                countryCode,
+                limit);
         return ResponseEntity.ok(sightings);
     }
 

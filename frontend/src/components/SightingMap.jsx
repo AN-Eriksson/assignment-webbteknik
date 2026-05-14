@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import Supercluster from 'supercluster';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
@@ -6,6 +6,9 @@ import 'leaflet/dist/leaflet.css';
 import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
 import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
+
+const API_BASE = '';
+const MAP_REQUEST_DEBOUNCE_MS = 250;
 
 const mapMarkerIcon = new L.Icon({
   iconUrl: markerIconUrl,
@@ -58,6 +61,18 @@ function toClusterFeature(sighting) {
   };
 }
 
+function buildMapQuery(countryCode, limit) {
+  const params = new URLSearchParams({
+    limit: String(limit)
+  });
+
+  if (countryCode.trim()) {
+    params.set('countryCode', countryCode.trim());
+  }
+
+  return params.toString();
+}
+
 function MapViewportTracker({ onViewportChange }) {
   const map = useMap();
 
@@ -73,27 +88,6 @@ function MapViewportTracker({ onViewportChange }) {
       map.off('zoomend', updateViewport);
     };
   }, [map, onViewportChange]);
-
-  return null;
-}
-
-function MapFitBounds({ points }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!points.length) {
-      return;
-    }
-
-    if (points.length === 1) {
-      const [singlePoint] = points;
-      map.setView([Number(singlePoint.latitude), Number(singlePoint.longitude)], 5);
-      return;
-    }
-
-    const bounds = L.latLngBounds(points.map((point) => [Number(point.latitude), Number(point.longitude)]));
-    map.fitBounds(bounds, { padding: [24, 24] });
-  }, [map, points]);
 
   return null;
 }
@@ -123,11 +117,7 @@ function ClusterPointMarker({ cluster, clusterIndex }) {
   }, [cluster.id, clusterIndex, latitude, longitude, map]);
 
   return (
-    <Marker
-      position={[latitude, longitude]}
-      icon={createClusterIcon(pointCount)}
-      ref={markerRef}
-    >
+    <Marker position={[latitude, longitude]} icon={createClusterIcon(pointCount)} ref={markerRef}>
       <Popup>
         <strong>{pointCount} sightings</strong>
         <br />
@@ -143,10 +133,7 @@ function SightingPointMarker({ sighting }) {
   const popupTitle = `${sighting.city || 'Unknown city'} • ${sighting.shapeName || 'unknown shape'}`;
 
   return (
-    <Marker
-      position={[latitude, longitude]}
-      icon={mapMarkerIcon}
-    >
+    <Marker position={[latitude, longitude]} icon={mapMarkerIcon}>
       <Popup>
         <strong>{popupTitle}</strong>
         <br />
@@ -171,9 +158,14 @@ function ClusterMarkers({ clusters, clusterIndex }) {
   });
 }
 
-export default function SightingMap({ sightings }) {
+export default function SightingMap({ countryCode = '', fallbackSightings = [], limit = 3000 }) {
   const [viewport, setViewport] = useState({ bounds: null, zoom: 2 });
-  const mapPoints = useMemo(() => sightings.filter(hasCoordinates), [sightings]);
+  const [mapSightings, setMapSightings] = useState([]);
+  const [mapLoading, setMapLoading] = useState(true);
+  const [mapError, setMapError] = useState('');
+
+  const activeSightings = mapSightings.length > 0 ? mapSightings : fallbackSightings;
+  const mapPoints = useMemo(() => activeSightings.filter(hasCoordinates), [activeSightings]);
 
   const clusterIndex = useMemo(() => {
     const index = new Supercluster({
@@ -194,19 +186,74 @@ export default function SightingMap({ sightings }) {
     return clusterIndex.getClusters(bbox, viewport.zoom);
   }, [clusterIndex, viewport.bounds, viewport.zoom]);
 
-  if (mapPoints.length === 0) {
-    return <p className="map-empty">No sightings with coordinates in the current sample.</p>;
-  }
+  const handleViewportChange = useCallback((bounds, zoom) => {
+    setViewport((current) => {
+      if (
+        current.zoom === zoom &&
+        current.bounds &&
+        current.bounds.equals(bounds)
+      ) {
+        return current;
+      }
+
+      return { bounds, zoom };
+    });
+  }, []);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      setMapLoading(true);
+      setMapError('');
+
+      try {
+        const query = buildMapQuery(countryCode, limit);
+        const response = await fetch(`${API_BASE}/api/sightings/map?${query}`, {
+          credentials: 'include',
+          signal: abortController.signal
+        });
+
+        if (!response.ok) {
+          setMapError(`Failed to load map sightings (${response.status})`);
+          setMapSightings([]);
+          return;
+        }
+
+        const data = await response.json();
+        setMapSightings(Array.isArray(data) ? data : []);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setMapError(error?.message || 'Failed to load map sightings');
+          setMapSightings([]);
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setMapLoading(false);
+        }
+      }
+    }, MAP_REQUEST_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      abortController.abort();
+    };
+  }, [countryCode, limit]);
 
   return (
     <div className="map-wrap">
+      <p className="map-status">
+        {mapLoading && 'Loading sightings for the map…'}
+        {!mapLoading && mapError && mapError}
+        {!mapLoading && !mapError && mapSightings.length === 0 && fallbackSightings.length > 0 && 'Showing fallback sample pins while the full map dataset loads.'}
+        {!mapLoading && !mapError && mapPoints.length === 0 && 'No sightings found for the current map data.'}
+        {!mapLoading && !mapError && mapPoints.length > 0 && `Showing ${mapPoints.length} sightings on the map.`}
+      </p>
       <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={false} className="map-shell">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MapViewportTracker onViewportChange={(bounds, zoom) => setViewport({ bounds, zoom })} />
-        <MapFitBounds points={mapPoints} />
+        <MapViewportTracker onViewportChange={handleViewportChange} />
         <ClusterMarkers clusters={visibleClusters} clusterIndex={clusterIndex} />
       </MapContainer>
     </div>
