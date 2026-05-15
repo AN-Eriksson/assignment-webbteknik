@@ -7,65 +7,119 @@ const MAP_LIMIT_MIN = 1;
 const MAP_LIMIT_MAX = 10000;
 const MAP_LIMIT_STEP = 250;
 
-const EMPTY_FILTERS = {
+/**
+ * Creates a fresh filter object with the default dashboard values.
+ *
+ * @returns {{ countryCode: string }} An empty filter state.
+ */
+const createEmptyFilters = () => ({
   countryCode: ''
+});
+
+/**
+ * Extracts a sorted list of unique country codes from the raw locations response.
+ *
+ * @param {Array<object>} locations Raw location objects from the backend.
+ * @returns {string[]} Sorted unique country codes.
+ */
+const extractCountryOptions = (locations) => {
+  return Array.from(
+    new Set(
+      (Array.isArray(locations) ? locations : [])
+        .map((location) => location?.countryCode)
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
 };
 
-function buildQueryParams(activeFilters) {
-  const params = new URLSearchParams();
+/**
+ * Reads the current authentication state from the backend.
+ *
+ * @returns {Promise<{ authenticated: boolean, name?: string, login?: string } | null>} The authenticated user data, or null when signed out.
+ */
+const fetchAuthenticatedUser = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/api/auth/check`, {
+      credentials: 'include'
+    });
 
-  if (activeFilters.countryCode.trim()) {
-    params.set('countryCode', activeFilters.countryCode.trim());
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.authenticated ? data : null;
+  } catch (error) {
+    console.error('Failed to load user:', error);
+    return null;
+  }
+};
+
+/**
+ * Loads country filter options from the backend locations endpoint.
+ *
+ * @returns {Promise<string[]>} Available country codes.
+ */
+const fetchCountryOptions = async () => {
+  const response = await fetch(`${API_BASE}/api/locations?page=0&size=${OPTION_PAGE_SIZE}`, {
+    credentials: 'include'
+  });
+
+  if (!response.ok) {
+    return [];
   }
 
-  return params.toString();
-}
+  const locations = await response.json();
+  return extractCountryOptions(locations);
+};
 
-export default function App() {
+const App = () => {
   const [user, setUser] = useState(null);
   const [countryOptions, setCountryOptions] = useState([]);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState(createEmptyFilters);
+  const [draftFilters, setDraftFilters] = useState(createEmptyFilters);
   const [mapLimit, setMapLimit] = useState(3000);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  async function loadUser() {
+  /**
+   * Loads the dashboard's auth state and updates the local user state.
+   *
+   * @returns {Promise<boolean>} True when the user is authenticated.
+   */
+  const loadUser = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/check`, {
-        credentials: 'include'
-      });
+      const authenticatedUser = await fetchAuthenticatedUser();
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.authenticated) {
-          setUser(data);
-          return true;
-        }
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
+        return true;
       }
-    } catch (err) {
-      console.error('Failed to load user:', err);
+    } catch (error) {
+      console.error('Failed to load user:', error);
     }
 
     setUser(null);
     return false;
-  }
+  };
 
-  async function loadFilterOptions() {
-    const locationsResponse = await fetch(`${API_BASE}/api/locations?page=0&size=${OPTION_PAGE_SIZE}`, {
-      credentials: 'include'
-    });
-
-    if (locationsResponse.ok) {
-      const locations = await locationsResponse.json();
-      const uniqueCountries = Array.from(
-        new Set((Array.isArray(locations) ? locations : []).map((location) => location?.countryCode).filter(Boolean))
-      ).sort((a, b) => a.localeCompare(b));
+  /**
+   * Loads country filter options for the authenticated dashboard.
+   */
+  const loadFilterOptions = async () => {
+    try {
+      const uniqueCountries = await fetchCountryOptions();
       setCountryOptions(uniqueCountries);
+    } catch (error) {
+      console.error('Failed to load filter options:', error);
+      setCountryOptions([]);
     }
-  }
+  };
 
-  async function bootstrap() {
+  /**
+   * Fetches auth and filter data in the correct order and updates the page state.
+   */
+  const bootstrap = async () => {
     try {
       setLoading(true);
       setError('');
@@ -81,7 +135,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     bootstrap();
@@ -89,6 +143,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    /**
+     * Re-runs the bootstrap flow when the browser restores this page from cache.
+     */
     const handlePageShow = () => {
       bootstrap();
     };
@@ -98,27 +155,45 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function onDraftFilterChange(event) {
+  /**
+   * Updates the draft filter form while the user is selecting filter values.
+   *
+   * @param {React.ChangeEvent<HTMLSelectElement>} event The change event from the filter form.
+   */
+  const handleDraftFilterChange = (event) => {
     const { name, value } = event.target;
     setDraftFilters((prev) => ({
       ...prev,
       [name]: value
     }));
-  }
+  };
 
-  function onApplyFilters(event) {
+  /**
+   * Applies the draft filter values to the active dashboard filter state.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} event The submit event from the filter form.
+   */
+  const handleApplyFilters = (event) => {
     event.preventDefault();
     setFilters(draftFilters);
-  }
+  };
 
-  function onClearFilters() {
-    setDraftFilters(EMPTY_FILTERS);
-    setFilters(EMPTY_FILTERS);
-  }
+  /**
+   * Resets both the active filters and the draft form back to their defaults.
+   */
+  const handleClearFilters = () => {
+    setDraftFilters(createEmptyFilters());
+    setFilters(createEmptyFilters());
+  };
 
-  function onMapLimitChange(event) {
+  /**
+   * Updates the amount of map data to fetch and render.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} event The range slider change event.
+   */
+  const handleMapLimitChange = (event) => {
     setMapLimit(Number(event.target.value));
-  }
+  };
 
   return (
     <main className="app">
@@ -146,10 +221,10 @@ export default function App() {
         <>
           <section className="panel">
             <h2>Filters</h2>
-            <form className="filters" onSubmit={onApplyFilters}>
+            <form className="filters" onSubmit={handleApplyFilters}>
               <label>
                 Country
-                <select name="countryCode" value={draftFilters.countryCode} onChange={onDraftFilterChange}>
+                <select name="countryCode" value={draftFilters.countryCode} onChange={handleDraftFilterChange}>
                   <option value="">All countries</option>
                   {countryOptions.map((countryCode) => (
                     <option key={countryCode} value={countryCode}>
@@ -160,7 +235,7 @@ export default function App() {
               </label>
               <div className="actions">
                 <button type="submit">Apply</button>
-                <button type="button" className="button-secondary" onClick={onClearFilters}>
+                <button type="button" className="button-secondary" onClick={handleClearFilters}>
                   Clear
                 </button>
               </div>
@@ -181,7 +256,7 @@ export default function App() {
                 max={MAP_LIMIT_MAX}
                 step={MAP_LIMIT_STEP}
                 value={mapLimit}
-                onChange={onMapLimitChange}
+                onChange={handleMapLimitChange}
               />
               <small>Range {MAP_LIMIT_MIN}–{MAP_LIMIT_MAX}. Higher values may take longer to load.</small>
             </label>
@@ -191,4 +266,6 @@ export default function App() {
       )}
     </main>
   );
-}
+};
+
+export default App;
