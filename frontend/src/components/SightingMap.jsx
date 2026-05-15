@@ -20,7 +20,13 @@ const mapMarkerIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-function createClusterIcon(pointCount) {
+/**
+ * Creates the icon used for cluster markers.
+ *
+ * @param {number} pointCount Number of sightings in the cluster.
+ * @returns {L.DivIcon} Leaflet cluster icon.
+ */
+const createClusterIcon = (pointCount) => {
   const size = pointCount < 10 ? 36 : pointCount < 50 ? 42 : 50;
   const bg = pointCount < 10 ? '#38bdf8' : pointCount < 50 ? '#22d3ee' : '#818cf8';
 
@@ -42,13 +48,25 @@ function createClusterIcon(pointCount) {
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2]
   });
-}
+};
 
-function hasCoordinates(sighting) {
+/**
+ * Checks whether a sighting has valid latitude and longitude values.
+ *
+ * @param {object} sighting A sighting item from the backend.
+ * @returns {boolean} True when both coordinates are finite numbers.
+ */
+const hasCoordinates = (sighting) => {
   return Number.isFinite(Number(sighting?.latitude)) && Number.isFinite(Number(sighting?.longitude));
-}
+};
 
-function toClusterFeature(sighting) {
+/**
+ * Converts a sighting object into a GeoJSON feature for Supercluster.
+ *
+ * @param {object} sighting A sighting item from the backend.
+ * @returns {object} GeoJSON feature representation of the sighting.
+ */
+const toClusterFeature = (sighting) => {
   return {
     type: 'Feature',
     geometry: {
@@ -59,9 +77,16 @@ function toClusterFeature(sighting) {
       sighting
     }
   };
-}
+};
 
-function buildMapQuery(countryCode, limit) {
+/**
+ * Builds the query string for the map API request.
+ *
+ * @param {string} countryCode Selected country filter value.
+ * @param {number} limit Maximum number of sightings to load.
+ * @returns {string} Query string without the leading question mark.
+ */
+const buildMapQuery = (countryCode, limit) => {
   const params = new URLSearchParams({
     limit: String(limit)
   });
@@ -71,9 +96,15 @@ function buildMapQuery(countryCode, limit) {
   }
 
   return params.toString();
-}
+};
 
-function MapViewportTracker({ onViewportChange }) {
+/**
+ * Keeps the stored viewport in sync with the Leaflet map.
+ *
+ * @param {{ onViewportChange: (bounds: import('leaflet').LatLngBounds, zoom: number) => void }} props Component props.
+ * @returns {null} Nothing is rendered directly.
+ */
+const MapViewportTracker = ({ onViewportChange }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -90,9 +121,15 @@ function MapViewportTracker({ onViewportChange }) {
   }, [map, onViewportChange]);
 
   return null;
-}
+};
 
-function ClusterPointMarker({ cluster, clusterIndex }) {
+/**
+ * Renders a cluster marker and zooms into it when clicked.
+ *
+ * @param {{ cluster: object, clusterIndex: Supercluster }} props Component props.
+ * @returns {JSX.Element} A cluster marker.
+ */
+const ClusterPointMarker = ({ cluster, clusterIndex }) => {
   const map = useMap();
   const markerRef = useRef(null);
   const [longitude, latitude] = cluster.geometry.coordinates;
@@ -125,9 +162,15 @@ function ClusterPointMarker({ cluster, clusterIndex }) {
       </Popup>
     </Marker>
   );
-}
+};
 
-function SightingPointMarker({ sighting }) {
+/**
+ * Renders one sighting marker with a popup.
+ *
+ * @param {{ sighting: object }} props Component props.
+ * @returns {JSX.Element} A single sighting marker.
+ */
+const SightingPointMarker = ({ sighting }) => {
   const latitude = Number(sighting.latitude);
   const longitude = Number(sighting.longitude);
   const popupTitle = `${sighting.city || 'Unknown city'} • ${sighting.shapeName || 'unknown shape'}`;
@@ -148,9 +191,15 @@ function SightingPointMarker({ sighting }) {
       </Popup>
     </Marker>
   );
-}
+};
 
-function ClusterMarkers({ clusters, clusterIndex }) {
+/**
+ * Renders the visible cluster or sighting markers.
+ *
+ * @param {{ clusters: Array<object>, clusterIndex: Supercluster }} props Component props.
+ * @returns {Array<JSX.Element>} A list of markers to render.
+ */
+const ClusterMarkers = ({ clusters, clusterIndex }) => {
   return clusters.map((cluster) => {
     if (cluster.properties.cluster) {
       return <ClusterPointMarker key={`cluster-${cluster.id}`} cluster={cluster} clusterIndex={clusterIndex} />;
@@ -159,9 +208,15 @@ function ClusterMarkers({ clusters, clusterIndex }) {
     const sighting = cluster.properties.sighting;
     return <SightingPointMarker key={`point-${sighting.id}`} sighting={sighting} />;
   });
-}
+};
 
-export default function SightingMap({ countryCode = '', fallbackSightings = [], limit = 3000 }) {
+/**
+ * Displays the UFO sightings map with clustering and backend loading.
+ *
+ * @param {{ countryCode?: string, fallbackSightings?: Array<object>, limit?: number }} props Component props.
+ * @returns {JSX.Element} The map section.
+ */
+const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 }) => {
   const [viewport, setViewport] = useState({ bounds: null, zoom: 2 });
   const [mapSightings, setMapSightings] = useState([]);
   const [mapLoading, setMapLoading] = useState(true);
@@ -191,11 +246,7 @@ export default function SightingMap({ countryCode = '', fallbackSightings = [], 
 
   const handleViewportChange = useCallback((bounds, zoom) => {
     setViewport((current) => {
-      if (
-        current.zoom === zoom &&
-        current.bounds &&
-        current.bounds.equals(bounds)
-      ) {
+      if (current.zoom === zoom && current.bounds && current.bounds.equals(bounds)) {
         return current;
       }
 
@@ -261,7 +312,9 @@ export default function SightingMap({ countryCode = '', fallbackSightings = [], 
       </MapContainer>
     </div>
   );
-}
+};
+
+export default SightingMap;
 
 
 
