@@ -86,13 +86,21 @@ const toClusterFeature = (sighting) => {
  * @param {number} limit Maximum number of sightings to load.
  * @returns {string} Query string without the leading question mark.
  */
-const buildMapQuery = (countryCode, limit) => {
+const buildMapQuery = (countryCode, limit, bounds) => {
   const params = new URLSearchParams({
     limit: String(limit)
   });
 
-  if (countryCode.trim()) {
+  if (countryCode && countryCode.trim()) {
     params.set('countryCode', countryCode.trim());
+  }
+
+  if (bounds) {
+    // bounds is an object with getNorth/getSouth/getEast/getWest (Leaflet LatLngBounds)
+    params.set('north', String(bounds.getNorth()));
+    params.set('south', String(bounds.getSouth()));
+    params.set('east', String(bounds.getEast()));
+    params.set('west', String(bounds.getWest()));
   }
 
   return params.toString();
@@ -254,6 +262,11 @@ const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 })
     });
   }, []);
 
+  // Serialize bounds to a stable string so we can use it as a dependency
+  const boundsKey = viewport.bounds
+    ? `${viewport.bounds.getNorth()},${viewport.bounds.getSouth()},${viewport.bounds.getEast()},${viewport.bounds.getWest()}`
+    : '';
+
   useEffect(() => {
     const abortController = new AbortController();
     const timeoutId = window.setTimeout(async () => {
@@ -261,8 +274,10 @@ const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 })
       setMapError('');
 
       try {
-        const query = buildMapQuery(countryCode, limit);
-        const response = await fetch(`${API_BASE}/api/sightings/map?${query}`, {
+        const query = buildMapQuery(countryCode, limit, viewport.bounds);
+        const url = `${API_BASE}/api/sightings/map?${query}`;
+        // include bounds and limit in the request so the backend can filter per-viewport
+        const response = await fetch(url, {
           credentials: 'include',
           signal: abortController.signal
         });
@@ -291,7 +306,8 @@ const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 })
       window.clearTimeout(timeoutId);
       abortController.abort();
     };
-  }, [countryCode, limit]);
+    // Re-run when country, limit or map viewport changes
+  }, [countryCode, limit, boundsKey, viewport.zoom]);
 
   return (
     <div className="map-wrap">
