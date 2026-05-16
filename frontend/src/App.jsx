@@ -3,9 +3,9 @@ import SightingMap from './components/SightingMap.jsx';
 
 const API_BASE = '';
 const OPTION_PAGE_SIZE = 250;
-const MAP_LIMIT_MIN = 1;
-const MAP_LIMIT_MAX = 10000;
-const MAP_LIMIT_STEP = 250;
+const MAP_LIMIT_MIN = 1000;
+const MAP_LIMIT_MAX = 100000;
+const MAP_LIMIT_STEP = 2500;
 
 /**
  * Creates a fresh filter object with the default dashboard values.
