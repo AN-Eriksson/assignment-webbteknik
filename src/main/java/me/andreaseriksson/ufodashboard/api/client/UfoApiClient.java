@@ -7,6 +7,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -41,6 +42,7 @@ public class UfoApiClient {
      * @param shapeName filter by UFO shape name (optional)
      * @return list of sightings
      */
+    @Cacheable(value = "sightings", key = "#page + '_' + #size + '_' + #city + '_' + #state + '_' + #countryCode + '_' + #shapeName")
     public List<SightingResponse> getSightings(int page, int size, String city, String state,
                                                String countryCode, String shapeName) {
         String url = UriComponentsBuilder.fromUriString(baseUrl)
@@ -57,7 +59,7 @@ public class UfoApiClient {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<PagedResponse<SightingResponse>>() {}
+                new ParameterizedTypeReference<>() {}
         );
 
         PagedResponse<SightingResponse> body = response.getBody();
@@ -86,7 +88,7 @@ public class UfoApiClient {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<PagedResponse<ShapeResponse>>() {}
+                new ParameterizedTypeReference<>() {}
         );
 
         PagedResponse<ShapeResponse> body = response.getBody();
@@ -115,7 +117,7 @@ public class UfoApiClient {
                 url,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<PagedResponse<LocationResponse>>() {}
+                new ParameterizedTypeReference<>() {}
         );
 
         PagedResponse<LocationResponse> body = response.getBody();
