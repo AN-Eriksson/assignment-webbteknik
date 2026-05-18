@@ -65,6 +65,7 @@ public class SightingsController {
             @RequestParam(required = false) Double east,
             @RequestParam(required = false) Double west,
             @RequestParam(required = false) String countryCode,
+            @RequestParam(required = false) String shapeName,
             @RequestParam(defaultValue = "3000") Integer limit) {
 
         List<SightingResponse> sightings = sightingViewportService.getSightingsInViewport(
@@ -73,6 +74,7 @@ public class SightingsController {
                 east,
                 west,
                 countryCode,
+                shapeName,
                 limit);
         return ResponseEntity.ok(sightings);
     }

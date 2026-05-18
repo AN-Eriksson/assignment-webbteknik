@@ -38,20 +38,22 @@ public class SightingViewportService {
      * @param east eastern longitude boundary
      * @param west western longitude boundary
      * @param countryCode optional country filter, or {@code __other__} for countries outside AU, CA, GB, and US
+     * @param shapeName optional shape filter passed through to the upstream API
      * @param limit maximum number of sightings to return
      * @return sightings inside the current viewport
      */
     public List<SightingResponse> getSightingsInViewport(Double north, Double south, Double east, Double west,
-            String countryCode, Integer limit) {
+            String countryCode, String shapeName, Integer limit) {
         String normalizedCountryCode = normalizeCountryCode(countryCode);
         boolean otherCountryFilter = OTHER_COUNTRY_FILTER.equals(normalizedCountryCode);
         String upstreamCountryCode = otherCountryFilter ? null : normalizedCountryCode;
+        String upstreamShapeName = normalizeShapeName(shapeName);
         int effectiveLimit = limit == null || limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
         boolean useViewportBounds = north != null && south != null && east != null && west != null;
         List<SightingResponse> matches = new ArrayList<>();
 
         for (int page = 0; matches.size() < effectiveLimit; page++) {
-            List<SightingResponse> pageSightings = ufoApiClient.getSightings(page, PAGE_SIZE, null, null, upstreamCountryCode, null);
+            List<SightingResponse> pageSightings = ufoApiClient.getSightings(page, PAGE_SIZE, null, null, upstreamCountryCode, upstreamShapeName);
             if (pageSightings.isEmpty()) {
                 break;
             }
@@ -89,6 +91,14 @@ public class SightingViewportService {
         }
 
         return trimmedCountryCode.toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeShapeName(String shapeName) {
+        if (shapeName == null || shapeName.isBlank()) {
+            return null;
+        }
+
+        return shapeName.trim();
     }
 
     private boolean matchesCountryFilter(SightingResponse sighting, String countryCode) {

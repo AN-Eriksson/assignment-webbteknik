@@ -83,17 +83,22 @@ const toClusterFeature = (sighting) => {
  * Builds the query string for the map API request.
  *
  * @param {string} countryCode Selected country filter value.
+ * @param {string} shapeName Selected shape filter value.
  * @param {number} limit Maximum number of sightings to load.
  * @param bounds Current map bounds, if available.
  * @returns {string} Query string without the leading question mark.
  */
-const buildMapQuery = (countryCode, limit, bounds) => {
+const buildMapQuery = (countryCode, shapeName, limit, bounds) => {
   const params = new URLSearchParams({
     limit: String(limit)
   });
 
   if (countryCode && countryCode.trim()) {
     params.set('countryCode', countryCode.trim());
+  }
+
+  if (shapeName && shapeName.trim()) {
+    params.set('shapeName', shapeName.trim());
   }
 
   if (bounds) {
@@ -238,10 +243,10 @@ const ClusterMarkers = ({ clusters, clusterIndex }) => {
 /**
  * Displays the UFO sightings map with clustering and backend loading.
  *
- * @param {{ countryCode?: string, fallbackSightings?: Array<object>, limit?: number }} props Component props.
+ * @param {{ countryCode?: string, shapeName?: string, fallbackSightings?: Array<object>, limit?: number }} props Component props.
  * @returns {JSX.Element} The map section.
  */
-const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 }) => {
+const SightingMap = ({ countryCode = '', shapeName = '', fallbackSightings = [], limit = 3000 }) => {
   const [viewport, setViewport] = useState({ bounds: null, zoom: 2 });
   const [mapSightings, setMapSightings] = useState([]);
   const [mapLoading, setMapLoading] = useState(true);
@@ -291,7 +296,7 @@ const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 })
       setMapError('');
 
       try {
-        const query = buildMapQuery(countryCode, limit, viewport.bounds);
+        const query = buildMapQuery(countryCode, shapeName, limit, viewport.bounds);
         const url = `${API_BASE}/api/sightings/map?${query}`;
         // include bounds and limit in the request so the backend can filter per-viewport
         const response = await fetch(url, {
@@ -323,8 +328,8 @@ const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 })
       window.clearTimeout(timeoutId);
       abortController.abort();
     };
-    // Re-run when country, limit or map viewport changes
-  }, [countryCode, limit, boundsKey, viewport.zoom]);
+    // Re-run when country, shape, limit or map viewport changes
+  }, [countryCode, shapeName, limit, boundsKey, viewport.zoom]);
 
   return (
     <div className="map-wrap">
