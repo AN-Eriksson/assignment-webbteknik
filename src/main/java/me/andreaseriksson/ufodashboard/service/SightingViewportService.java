@@ -2,6 +2,8 @@ package me.andreaseriksson.ufodashboard.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,9 @@ import me.andreaseriksson.ufodashboard.api.dto.SightingResponse;
  */
 @Service
 public class SightingViewportService {
+
+    private static final String OTHER_COUNTRY_FILTER = "__other__";
+    private static final Set<String> SUPPORTED_COUNTRY_CODES = Set.of("AU", "CA", "GB", "US");
 
     private static final int PAGE_SIZE = 100;
     private static final int DEFAULT_LIMIT = 3000;
@@ -32,18 +37,21 @@ public class SightingViewportService {
      * @param south southern latitude boundary
      * @param east eastern longitude boundary
      * @param west western longitude boundary
-     * @param countryCode optional country filter
+     * @param countryCode optional country filter, or {@code __other__} for countries outside AU, CA, GB, and US
      * @param limit maximum number of sightings to return
      * @return sightings inside the current viewport
      */
     public List<SightingResponse> getSightingsInViewport(Double north, Double south, Double east, Double west,
             String countryCode, Integer limit) {
+        String normalizedCountryCode = normalizeCountryCode(countryCode);
+        boolean otherCountryFilter = OTHER_COUNTRY_FILTER.equals(normalizedCountryCode);
+        String upstreamCountryCode = otherCountryFilter ? null : normalizedCountryCode;
         int effectiveLimit = limit == null || limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
         boolean useViewportBounds = north != null && south != null && east != null && west != null;
         List<SightingResponse> matches = new ArrayList<>();
 
         for (int page = 0; matches.size() < effectiveLimit; page++) {
-            List<SightingResponse> pageSightings = ufoApiClient.getSightings(page, PAGE_SIZE, null, null, countryCode, null);
+            List<SightingResponse> pageSightings = ufoApiClient.getSightings(page, PAGE_SIZE, null, null, upstreamCountryCode, null);
             if (pageSightings.isEmpty()) {
                 break;
             }
@@ -53,7 +61,8 @@ public class SightingViewportService {
                     continue;
                 }
 
-                if (!useViewportBounds || isInsideViewport(sighting, north, south, east, west)) {
+                if (matchesCountryFilter(sighting, normalizedCountryCode)
+                        && (!useViewportBounds || isInsideViewport(sighting, north, south, east, west))) {
                     matches.add(sighting);
                     if (matches.size() >= effectiveLimit) {
                         break;
@@ -67,6 +76,37 @@ public class SightingViewportService {
         }
 
         return matches;
+    }
+
+    private String normalizeCountryCode(String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) {
+            return null;
+        }
+
+        String trimmedCountryCode = countryCode.trim();
+        if (OTHER_COUNTRY_FILTER.equalsIgnoreCase(trimmedCountryCode)) {
+            return OTHER_COUNTRY_FILTER;
+        }
+
+        return trimmedCountryCode.toUpperCase(Locale.ROOT);
+    }
+
+    private boolean matchesCountryFilter(SightingResponse sighting, String countryCode) {
+        if (countryCode == null) {
+            return true;
+        }
+
+        if (OTHER_COUNTRY_FILTER.equals(countryCode)) {
+            return isOtherOrUnknownCountry(sighting.getCountryCode());
+        }
+
+        String sightingCountryCode = normalizeCountryCode(sighting.getCountryCode());
+        return countryCode.equals(sightingCountryCode);
+    }
+
+    private boolean isOtherOrUnknownCountry(String countryCode) {
+        String normalizedCountryCode = normalizeCountryCode(countryCode);
+        return normalizedCountryCode == null || !SUPPORTED_COUNTRY_CODES.contains(normalizedCountryCode);
     }
 
     /**

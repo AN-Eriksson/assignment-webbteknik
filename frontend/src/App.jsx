@@ -6,30 +6,37 @@ const OPTION_PAGE_SIZE = 250;
 const MAP_LIMIT_MIN = 1000;
 const MAP_LIMIT_MAX = 100000;
 const MAP_LIMIT_STEP = 2500;
+const SUPPORTED_COUNTRY_CODES = ['AU', 'CA', 'GB', 'US'];
+const OTHER_COUNTRY_FILTER = '__other__';
+const OTHER_COUNTRY_LABEL = 'Other / unknown';
 
 /**
  * Creates a fresh filter object with the default dashboard values.
  *
- * @returns {{ countryCode: string }} An empty filter state.
+ * The dashboard starts with a supported country instead of an all-countries option.
+ *
+ * @returns {{ countryCode: string }} A default filter state.
  */
-const createEmptyFilters = () => ({
-  countryCode: ''
+const createDefaultFilters = () => ({
+  countryCode: SUPPORTED_COUNTRY_CODES[0]
 });
 
 /**
- * Extracts a sorted list of unique country codes from the raw locations response.
+ * Builds the fixed country filter options shown in the UI.
  *
- * @param {Array<object>} locations Raw location objects from the backend.
- * @returns {string[]} Sorted unique country codes.
+ * @returns {Array<{ value: string, label: string }>} Available country filter options.
  */
-const extractCountryOptions = (locations) => {
-  return Array.from(
-    new Set(
-      (Array.isArray(locations) ? locations : [])
-        .map((location) => location?.countryCode)
-        .filter(Boolean)
-    )
-  ).sort((a, b) => a.localeCompare(b));
+const buildCountryOptions = () => {
+  return [
+    ...SUPPORTED_COUNTRY_CODES.map((countryCode) => ({
+      value: countryCode,
+      label: countryCode
+    })),
+    {
+      value: OTHER_COUNTRY_FILTER,
+      label: OTHER_COUNTRY_LABEL
+    }
+  ];
 };
 
 /**
@@ -56,9 +63,9 @@ const fetchAuthenticatedUser = async () => {
 };
 
 /**
- * Loads country filter options from the backend locations endpoint.
+ * Loads the backend locations endpoint and returns the fixed country filter options.
  *
- * @returns {Promise<string[]>} Available country codes.
+ * @returns {Promise<Array<{ value: string, label: string }>>} Available country codes.
  */
 const fetchCountryOptions = async () => {
   const response = await fetch(`${API_BASE}/api/locations?page=0&size=${OPTION_PAGE_SIZE}`, {
@@ -69,15 +76,15 @@ const fetchCountryOptions = async () => {
     throw new Error(`Failed to load filter options (${response.status})`);
   }
 
-  const locations = await response.json();
-  return extractCountryOptions(locations);
+  await response.json();
+  return buildCountryOptions();
 };
 
 const App = () => {
   const [user, setUser] = useState(null);
   const [countryOptions, setCountryOptions] = useState([]);
-  const [filters, setFilters] = useState(createEmptyFilters);
-  const [draftFilters, setDraftFilters] = useState(createEmptyFilters);
+  const [filters, setFilters] = useState(createDefaultFilters);
+  const [draftFilters, setDraftFilters] = useState(createDefaultFilters);
   const [mapLimit, setMapLimit] = useState(3000);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -175,8 +182,8 @@ const App = () => {
    * Resets both the active filters and the draft form back to their defaults.
    */
   const handleClearFilters = () => {
-    setDraftFilters(createEmptyFilters());
-    setFilters(createEmptyFilters());
+    setDraftFilters(createDefaultFilters());
+    setFilters(createDefaultFilters());
   };
 
   /**
@@ -248,10 +255,9 @@ const App = () => {
               <label>
                 Country
                 <select name="countryCode" value={draftFilters.countryCode} onChange={handleDraftFilterChange}>
-                  <option value="">All countries</option>
-                  {countryOptions.map((countryCode) => (
-                    <option key={countryCode} value={countryCode}>
-                      {countryCode.toUpperCase()}
+                  {countryOptions.map(({ value, label }) => (
+                    <option key={value} value={value}>
+                      {label}
                     </option>
                   ))}
                 </select>
@@ -263,7 +269,9 @@ const App = () => {
                 </button>
               </div>
             </form>
-            <p className="helper-text">Country filter updates the map data. The map will respects your filter selection.</p>
+            <p className="helper-text">
+              Country filter updates the map data. Choose AU, CA, GB, US, or Other / unknown for countries outside that set.
+            </p>
           </section>
         </>
       )}
