@@ -1,16 +1,18 @@
 # UFO Dashboard
 
-Minimal Spring Boot + React dashboard for UFO sightings.
+Spring Boot + React dashboard for UFO sightings with GitHub OAuth login.
+
+## Tech stack
+
+- Backend: Spring Boot (Java 21)
+- Frontend: React + Vite + Leaflet + Supercluster
+- Deploy: Docker (single image, backend serves built frontend)
 
 ## Run locally
 
-Backend:
-
 ```bash
 ./gradlew bootRun
 ```
-
-Frontend:
 
 ```bash
 cd frontend
@@ -18,65 +20,45 @@ npm install
 npm run dev
 ```
 
-## Visualizations
+## Performance and issue-related implementation
 
-- Pie chart for shape share
-- Line chart for sightings over time
-- OpenStreetMap pin map for sightings with coordinates
+- The app does **not** fetch the whole dataset at once.
+- Backend endpoints support pagination (`page`, `size`) for sightings/shapes/locations.
+- The map uses **on-demand viewport loading** via `/api/sightings/map` with bounds (`north/south/east/west`).
+- Map requests are **debounced** in the frontend to avoid request spam while panning/zooming.
+- Large map datasets are **clustered** with Supercluster instead of rendering raw points directly.
+- Backend applies a configurable request limit for map responses to keep UI and API responsive.
+- Frequently requested API data is cached in-memory with Caffeine.
+- UI shows loading and error states for API calls.
 
-## Performance notes
+## Visualization
 
-- The list uses pagination.
-- The charts use a bounded sample of sightings.
-- The map loads sightings for the visible viewport and clusters nearby pins.
+- Interactive OpenStreetMap map with zoom/pan, cluster drill-down, and filter support.
 
-## Testing
+## Auth
 
-`src/test/resources/application.properties` provides dummy OAuth and API values so `./gradlew test` can run without local secrets.
+- OAuth2 login with GitHub (server-side flow via Spring Security).
+- Session-based protected API endpoints.
 
-# Assignment Webbteknik
-
-## Overview
-
-This project has:
-- a Spring Boot backend with GitHub OAuth2
-- a React frontend in `frontend/`
-- a single production Docker image where the backend serves the built frontend files
-
-## Local development
-
-Run the backend:
-
-```bash
-./gradlew bootRun
-```
-
-Run the frontend separately for development:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Docker deployment
-
-The Docker setup builds the React app and packages it into the backend image.
-Only one container is needed in production.
-
-Build and run with Compose:
+## Docker
 
 ```bash
 docker compose up --build
 ```
 
-Backend + frontend are then available at:
-- http://localhost:8080
+Default app URL: `http://localhost:3147`
 
 ## Environment variables
 
-Create a `.env` file from `.env.example` and fill in:
+Create `.env` from `example.env` and set:
+
 - `GITHUB_CLIENT_ID`
 - `GITHUB_CLIENT_SECRET`
 - `UFO_API_URL`
+
+## Tests
+
+```bash
+./gradlew test
+```
 
