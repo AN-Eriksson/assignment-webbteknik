@@ -51,7 +51,7 @@ const fetchAuthenticatedUser = async () => {
     return data.authenticated ? data : null;
   } catch (error) {
     console.error('Failed to load user:', error);
-    return null;
+    throw new Error('Failed to verify authentication status. Please try again.');
   }
 };
 
@@ -66,7 +66,7 @@ const fetchCountryOptions = async () => {
   });
 
   if (!response.ok) {
-    return [];
+    throw new Error(`Failed to load filter options (${response.status})`);
   }
 
   const locations = await response.json();
@@ -88,15 +88,11 @@ const App = () => {
    * @returns {Promise<boolean>} True when the user is authenticated.
    */
   const loadUser = async () => {
-    try {
-      const authenticatedUser = await fetchAuthenticatedUser();
+    const authenticatedUser = await fetchAuthenticatedUser();
 
-      if (authenticatedUser) {
-        setUser(authenticatedUser);
-        return true;
-      }
-    } catch (error) {
-      console.error('Failed to load user:', error);
+    if (authenticatedUser) {
+      setUser(authenticatedUser);
+      return true;
     }
 
     setUser(null);
@@ -107,13 +103,8 @@ const App = () => {
    * Loads country filter options for the authenticated dashboard.
    */
   const loadFilterOptions = async () => {
-    try {
-      const uniqueCountries = await fetchCountryOptions();
-      setCountryOptions(uniqueCountries);
-    } catch (error) {
-      console.error('Failed to load filter options:', error);
-      setCountryOptions([]);
-    }
+    const uniqueCountries = await fetchCountryOptions();
+    setCountryOptions(uniqueCountries);
   };
 
   /**
@@ -131,6 +122,8 @@ const App = () => {
         setCountryOptions([]);
       }
     } catch (err) {
+      setUser(null);
+      setCountryOptions([]);
       setError(err?.message || 'Something went wrong');
     } finally {
       setLoading(false);
@@ -216,6 +209,16 @@ const App = () => {
           </a>
         )}
       </header>
+
+      {error && (
+        <section className="panel" role="alert">
+          <h2>Could not load the dashboard</h2>
+          <p>{error}</p>
+          <button type="button" onClick={bootstrap}>
+            Retry
+          </button>
+        </section>
+      )}
 
       {user && (
         <>

@@ -17,7 +17,7 @@ public class SightingViewportService {
 
     private static final int PAGE_SIZE = 100;
     private static final int DEFAULT_LIMIT = 3000;
-    private static final int MAX_LIMIT = 10000;
+    private static final int MAX_LIMIT = 100000;
 
     private final UfoApiClient ufoApiClient;
 

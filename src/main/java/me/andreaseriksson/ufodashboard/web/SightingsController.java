@@ -83,12 +83,8 @@ public class SightingsController {
     @GetMapping("/sightings/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<SightingResponse> getSightingById(@PathVariable Long id) {
-        try {
-            SightingResponse sighting = ufoApiClient.getSightingById(id);
-            return ResponseEntity.ok(sighting);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        SightingResponse sighting = ufoApiClient.getSightingById(id);
+        return ResponseEntity.ok(sighting);
     }
 
     /**
@@ -110,12 +106,8 @@ public class SightingsController {
     @GetMapping("/shapes/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<ShapeResponse> getShapeById(@PathVariable Long id) {
-        try {
-            ShapeResponse shape = ufoApiClient.getShapeById(id);
-            return ResponseEntity.ok(shape);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        ShapeResponse shape = ufoApiClient.getShapeById(id);
+        return ResponseEntity.ok(shape);
     }
 
     /**
@@ -137,12 +129,8 @@ public class SightingsController {
     @GetMapping("/locations/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<LocationResponse> getLocationById(@PathVariable Long id) {
-        try {
-            LocationResponse location = ufoApiClient.getLocationById(id);
-            return ResponseEntity.ok(location);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        LocationResponse location = ufoApiClient.getLocationById(id);
+        return ResponseEntity.ok(location);
     }
 }
 
