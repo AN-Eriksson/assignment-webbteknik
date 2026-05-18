@@ -2,6 +2,17 @@ package me.andreaseriksson.ufodashboard.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Data Transfer Object representing a geographic location.
+ *
+ * Represents a location entity from the UFO API, containing city, state, country, and GPS coordinates.
+ * Includes HATEOAS links to the resource for API navigation.
+ *
+ * Primarily used for:
+ *   - Populating country filters on the frontend
+ *   - Providing location context for UFO sightings
+ *   - Mapping sightings to geographic areas
+ */
 public class LocationResponse {
     private Long id;
     private String city;
@@ -83,6 +94,10 @@ public class LocationResponse {
         this.links = links;
     }
 
+    /**
+     * HATEOAS links container for this location resource.
+     * Wraps the self reference link pointing to this location's API endpoint.
+     */
     public static class Links {
         private Link self;
 
@@ -102,6 +117,10 @@ public class LocationResponse {
         }
     }
 
+    /**
+     * Represents a single link in HATEOAS format.
+     * Contains the href URL string for accessing the related resource.
+     */
     public static class Link {
         private String href;
 

@@ -5,6 +5,36 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Data Transfer Object representing a UFO sighting event.
+ *
+ * Represents a complete UFO sighting record from the UFO API, containing temporal information
+ * (when the sighting occurred and was reported), geographic data (location and coordinates),
+ * event details (duration, shape, observer comments), and entity references (location and shape IDs).
+ * Includes HATEOAS links for API navigation.
+ *
+ * Temporal fields:
+ *   - sightedAt: exact date and time when the UFO was sighted
+ *   - datePosted: date when the sighting was reported/posted
+ *   - durationSeconds: duration in seconds (may be null)
+ *   - durationText: human-readable duration string
+ *
+ * Geographic fields:
+ *   - city, state, countryCode: location information
+ *   - latitude, longitude: GPS coordinates for map visualization
+ *   - locationId: reference to the Location entity
+ *
+ * Observable fields:
+ *   - shapeName: description of the observed object's shape
+ *   - shapeId: reference to the Shape entity
+ *   - comments: witness observations and comments
+ *
+ * Primarily used for:
+ *   - Populating the interactive map with UFO sightings
+ *   - Displaying sighting details in popups and listings
+ *   - Filtering/searching sightings by date, location, or shape
+ *   - Analyzing temporal and geographic patterns
+ */
 public class SightingResponse {
     private Long id;
     private LocalDateTime sightedAt;
@@ -167,6 +197,10 @@ public class SightingResponse {
         this.links = links;
     }
 
+    /**
+     * HATEOAS links container for this sighting resource.
+     * Wraps the self reference link pointing to this sighting's API endpoint.
+     */
     public static class Links {
         private Link self;
 
@@ -186,6 +220,10 @@ public class SightingResponse {
         }
     }
 
+    /**
+     * Represents a single link in HATEOAS format.
+     * Contains the href URL string for accessing the related resource.
+     */
     public static class Link {
         private String href;
 

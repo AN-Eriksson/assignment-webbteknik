@@ -6,8 +6,27 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Wrapper for paginated API responses.
- * Handles HATEOAS responses with _embedded and _links.
+ * Generic wrapper for paginated API responses in HATEOAS format.
+ *
+ * Wraps paginated responses from the UFO API, handling Spring Data REST style HATEOAS format
+ * with _embedded and _links properties. Supports multiple content types by detecting which
+ * list is populated (sightings, shapes, or locations).
+ *
+ * HATEOAS Structure:
+ *   _embedded: contains the actual list of items ({@link Embedded})
+ *   _links: contains navigation links to other pages and related resources ({@link Links})
+ *
+ * Type parameter T is the item type within the embedded list (typically SightingResponse,
+ * ShapeResponse, or LocationResponse).
+ *
+ * Usage:
+ *   PagedResponse<SightingResponse> response = fetch("/api/sightings?page=0&size=50");
+ *   List<SightingResponse> items = response.getContent(); // Handles _embedded parsing
+ *
+ * Primarily used for:
+ *   - Parsing paginated responses from the UFO API
+ *   - Extracting content from different list types dynamically
+ *   - Building pagination controls on the frontend
  */
 public class PagedResponse<T> {
     
@@ -59,6 +78,16 @@ public class PagedResponse<T> {
         return List.of();
     }
     
+    /**
+     * Container for the actual list of items in a paginated response.
+     *
+     * The API can return different list types depending on the endpoint.
+     * This class dynamically holds the appropriate list and the @JsonAnySetter
+     * handles any unknown properties from the API for forward compatibility.
+     *
+     * One of sightingResponseList, shapeResponseList, or locationResponseList will be
+     * populated depending on which endpoint was called.
+     */
     public static class Embedded<T> {
         private List<T> sightingResponseList;
         private List<T> shapeResponseList;
@@ -103,6 +132,16 @@ public class PagedResponse<T> {
         }
     }
     
+    /**
+     * HATEOAS links container for the paginated response.
+     *
+     * Contains navigation links including:
+     *   - self: link to the current page
+     *   - shapes, locations, sightings: links to related resources
+     *
+     * These links are useful for implementing pagination and navigation controls
+     * on the frontend without hardcoding API URLs.
+     */
     public static class Links {
         private Link self;
         private Link shapes;
@@ -152,6 +191,10 @@ public class PagedResponse<T> {
         }
     }
     
+    /**
+     * Represents a single HATEOAS link with an href URL.
+     * Used to provide navigational references to API endpoints.
+     */
     public static class Link {
         private String href;
         
