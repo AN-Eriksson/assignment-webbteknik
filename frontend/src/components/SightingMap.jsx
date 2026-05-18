@@ -84,6 +84,7 @@ const toClusterFeature = (sighting) => {
  *
  * @param {string} countryCode Selected country filter value.
  * @param {number} limit Maximum number of sightings to load.
+ * @param bounds Current map bounds, if available.
  * @returns {string} Query string without the leading question mark.
  */
 const buildMapQuery = (countryCode, limit, bounds) => {
@@ -104,6 +105,22 @@ const buildMapQuery = (countryCode, limit, bounds) => {
   }
 
   return params.toString();
+};
+
+/**
+ * Normalizes fetch and backend errors into user-friendly map messages.
+ *
+ * @param {unknown} error The error thrown while loading map data.
+ * @returns {string} A readable message for the UI.
+ */
+const normalizeMapError = (error) => {
+  const message = error?.message || 'Failed to load map sightings';
+
+  if (message === 'Failed to fetch' || message === 'NetworkError when attempting to fetch resource.') {
+    return 'Could not load map data. Please check that the backend is running and try again.';
+  }
+
+  return message;
 };
 
 /**
@@ -292,7 +309,7 @@ const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 })
         setMapSightings(Array.isArray(data) ? data : []);
       } catch (error) {
         if (error.name !== 'AbortError') {
-          setMapError(error?.message || 'Failed to load map sightings');
+          setMapError(normalizeMapError(error));
           setMapSightings([]);
         }
       } finally {
@@ -311,13 +328,19 @@ const SightingMap = ({ countryCode = '', fallbackSightings = [], limit = 3000 })
 
   return (
     <div className="map-wrap">
-      <p className="map-status">
-        {mapLoading && 'Loading sightings for the map…'}
-        {!mapLoading && mapError && mapError}
-        {!mapLoading && !mapError && mapSightings.length === 0 && fallbackSightings.length > 0 && 'Showing fallback sample pins while the full map dataset loads.'}
-        {!mapLoading && !mapError && mapPoints.length === 0 && 'No sightings found for the current map data.'}
-        {!mapLoading && !mapError && mapPoints.length > 0 && `Showing ${mapPoints.length} sightings on the map.`}
-      </p>
+      {mapError ? (
+        <div className="banner banner-error" role="alert">
+          <strong>Could not load the map</strong>
+          <p>{mapError}</p>
+        </div>
+      ) : (
+        <p className="map-status">
+          {mapLoading && 'Loading sightings for the map…'}
+          {!mapLoading && !mapError && mapSightings.length === 0 && fallbackSightings.length > 0 && 'Showing fallback sample pins while the full map dataset loads.'}
+          {!mapLoading && !mapError && mapPoints.length === 0 && 'No sightings found for the current map data.'}
+          {!mapLoading && !mapError && mapPoints.length > 0 && `Showing ${mapPoints.length} sightings on the map.`}
+        </p>
+      )}
       <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={false} className="map-shell">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

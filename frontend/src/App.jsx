@@ -223,6 +223,26 @@ const App = () => {
       {user && (
         <>
           <section className="panel">
+            <h2>Map view</h2>
+            <p className="helper-text">
+              The map loads sightings across the dataset up to your chosen limit, clusters them for performance, and respects the active country filter.
+            </p>
+            <label className="map-control">
+              <span>Map datapoints to load: {mapLimit}</span>
+              <input
+                type="range"
+                min={MAP_LIMIT_MIN}
+                max={MAP_LIMIT_MAX}
+                step={MAP_LIMIT_STEP}
+                value={mapLimit}
+                onChange={handleMapLimitChange}
+              />
+              <small>Range {MAP_LIMIT_MIN}–{MAP_LIMIT_MAX}. Higher values may take longer to load.</small>
+            </label>
+            {!loading && !error && <SightingMap countryCode={filters.countryCode} limit={mapLimit} />}
+          </section>
+
+          <section className="panel">
             <h2>Filters</h2>
             <form className="filters" onSubmit={handleApplyFilters}>
               <label>
@@ -244,26 +264,6 @@ const App = () => {
               </div>
             </form>
             <p className="helper-text">Country filter updates the map data. The map will respects your filter selection.</p>
-          </section>
-
-          <section className="panel">
-            <h2>Map view</h2>
-            <p className="helper-text">
-              The map loads sightings across the dataset up to your chosen limit, clusters them for performance, and respects the active country filter.
-            </p>
-            <label className="map-control">
-              <span>Map datapoints to load: {mapLimit}</span>
-              <input
-                type="range"
-                min={MAP_LIMIT_MIN}
-                max={MAP_LIMIT_MAX}
-                step={MAP_LIMIT_STEP}
-                value={mapLimit}
-                onChange={handleMapLimitChange}
-              />
-              <small>Range {MAP_LIMIT_MIN}–{MAP_LIMIT_MAX}. Higher values may take longer to load.</small>
-            </label>
-            {!loading && !error && <SightingMap countryCode={filters.countryCode} limit={mapLimit} />}
           </section>
         </>
       )}

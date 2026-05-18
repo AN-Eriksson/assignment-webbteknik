@@ -99,6 +99,23 @@ p {
   border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
+.banner {
+  margin-top: 1.5rem;
+  padding: 1rem 1.2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.banner p {
+  margin-bottom: 0;
+}
+
+.banner-error {
+  background: rgba(127, 29, 29, 0.24);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fecaca;
+}
+
 .filters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
