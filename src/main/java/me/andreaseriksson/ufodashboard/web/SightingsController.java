@@ -31,6 +31,12 @@ public class SightingsController {
     private final UfoApiClient ufoApiClient;
     private final SightingViewportService sightingViewportService;
 
+    /**
+     * Constructs a new SightingsController with dependencies for UFO API access and viewport filtering.
+     *
+     * @param ufoApiClient client for fetching sightings, shapes, and locations from the upstream UFO API
+     * @param sightingViewportService service for filtering sightings by map viewport and map limit
+     */
     @Autowired
     public SightingsController(UfoApiClient ufoApiClient, SightingViewportService sightingViewportService) {
         this.ufoApiClient = ufoApiClient;
@@ -38,7 +44,18 @@ public class SightingsController {
     }
 
     /**
-     * Get paginated list of sightings with optional filters.
+     * Retrieves a paginated list of UFO sightings with optional filtering.
+     *
+     * Fetches sightings from the upstream UFO API with pagination support and optional filters.
+     * Filters can be combined to narrow results. All parameters except page and size are optional.
+     *
+     * @param page zero-indexed page number (default: 0)
+     * @param size number of sightings per page (default: 20)
+     * @param city filter by city name (optional)
+     * @param state filter by state (optional)
+     * @param countryCode filter by ISO country code (optional)
+     * @param shapeName filter by UFO shape name (optional)
+     * @return a ResponseEntity containing a list of sightings matching the query parameters
      */
     @GetMapping("/sightings")
     @ResponseStatus(HttpStatus.OK)
@@ -55,7 +72,23 @@ public class SightingsController {
     }
 
     /**
-     * Get sightings inside the visible map viewport.
+     * Retrieves sightings inside the currently visible map viewport.
+     *
+     * This endpoint is optimized for interactive map displays. It filters sightings by geographic bounds
+     * (north/south latitude, east/west longitude) and respects the country and shape filters. The result
+     * is limited to avoid overwhelming the frontend.
+     *
+     * Bounds are optional; when all four bounds are provided, only sightings within that rectangle are returned.
+     * When bounds are missing, all sightings within the limit are returned (not geographically filtered).
+     *
+     * @param north northern latitude boundary (optional)
+     * @param south southern latitude boundary (optional)
+     * @param east eastern longitude boundary (optional)
+     * @param west western longitude boundary (optional)
+     * @param countryCode filter by country code, or {@code __other__} for non-standard countries (optional)
+     * @param shapeName filter by UFO shape name (optional)
+     * @param limit maximum number of sightings to return (default: 3000)
+     * @return a ResponseEntity containing a list of sightings within the viewport and filters
      */
     @GetMapping("/sightings/map")
     @ResponseStatus(HttpStatus.OK)
@@ -80,7 +113,10 @@ public class SightingsController {
     }
 
     /**
-     * Get a single sighting by ID.
+     * Retrieves a single UFO sighting by ID.
+     *
+     * @param id the unique identifier of the sighting to retrieve
+     * @return a ResponseEntity containing the sighting details
      */
     @GetMapping("/sightings/{id}")
     @ResponseStatus(HttpStatus.OK)
@@ -90,7 +126,14 @@ public class SightingsController {
     }
 
     /**
-     * Get paginated list of shapes.
+     * Retrieves a paginated list of UFO shape classifications.
+     *
+     * Shapes represent UFO appearance categories (e.g. "circle", "triangle", "star") used to classify
+     * sightings. This endpoint is typically used to populate filter dropdowns in the frontend.
+     *
+     * @param page zero-indexed page number (default: 0)
+     * @param size number of shapes per page (default: 50)
+     * @return a ResponseEntity containing a list of shape records
      */
     @GetMapping("/shapes")
     @ResponseStatus(HttpStatus.OK)
@@ -103,7 +146,10 @@ public class SightingsController {
     }
 
     /**
-     * Get a single shape by ID.
+     * Retrieves a single UFO shape classification by ID.
+     *
+     * @param id the unique identifier of the shape to retrieve
+     * @return a ResponseEntity containing the shape details (name and metadata)
      */
     @GetMapping("/shapes/{id}")
     @ResponseStatus(HttpStatus.OK)
@@ -113,7 +159,15 @@ public class SightingsController {
     }
 
     /**
-     * Get paginated list of locations.
+     * Retrieves a paginated list of geographic locations.
+     *
+     * Locations represent cities, states, and countries where UFO sightings have been reported.
+     * This endpoint is typically used to populate geographic filters and to understand the
+     * geographic spread of sightings in the dataset.
+     *
+     * @param page zero-indexed page number (default: 0)
+     * @param size number of locations per page (default: 50)
+     * @return a ResponseEntity containing a list of location records with coordinates
      */
     @GetMapping("/locations")
     @ResponseStatus(HttpStatus.OK)
@@ -126,7 +180,10 @@ public class SightingsController {
     }
 
     /**
-     * Get a single location by ID.
+     * Retrieves a single geographic location by ID.
+     *
+     * @param id the unique identifier of the location to retrieve
+     * @return a ResponseEntity containing the location details (city, state, country, coordinates)
      */
     @GetMapping("/locations/{id}")
     @ResponseStatus(HttpStatus.OK)
