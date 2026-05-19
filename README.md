@@ -10,9 +10,9 @@ UFO Dashboard is a web application that visualizes UFO sightings from the WT1 AP
 Users sign in with GitHub OAuth and explore sightings on an interactive map.
 The app provides filters for country and shape so the dataset can be narrowed down while exploring the map.
 
-## Deployed Application
+## Github repository
 
-Github repository: https://github.com/AN-Eriksson/assignment-webbteknik 
+URL: https://github.com/AN-Eriksson/assignment-webbteknik 
 
 ## Deployed Application
 
