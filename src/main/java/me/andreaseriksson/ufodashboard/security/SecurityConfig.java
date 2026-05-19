@@ -16,6 +16,21 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Spring Security configuration for the UFO Dashboard application.
+ *
+ * This class configures HTTP security (CORS, CSRF exceptions, OAuth2 login, logout behavior)
+ * and exposes beans used by the security infrastructure.
+ *
+ * Exposed beans:
+ * - webSecurityCustomizer() - static resource exclusions for the application
+ * - securityFilterChain(HttpSecurity) - main SecurityFilterChain bean that defines
+ *   authorization rules and OAuth2 login/logout behavior
+ * - corsConfigurationSource() - CORS configuration for cross-origin requests
+ *
+ * Method-level security is enabled via @EnableMethodSecurity so controllers can use
+ * annotations like @PreAuthorize to protect individual endpoints.
+ */
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
@@ -23,6 +38,12 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:8080}")
     private String allowedOrigins;
 
+    /**
+     * Provide a WebSecurityCustomizer that tells Spring Security to ignore requests for
+     * static frontend assets. This avoids security filters being applied to those resources.
+     *
+     * @return a WebSecurityCustomizer configured to ignore static asset request matchers
+     */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring().requestMatchers(
@@ -35,6 +56,16 @@ public class SecurityConfig {
         );
     }
 
+    /**
+     * Configure the main HTTP security filter chain.
+     *
+     * Defines CORS support, CSRF exceptions, disables form login and HTTP basic, configures
+     * OAuth2 login and logout handling, and declares authorization rules for API and static endpoints.
+     *
+     * @param http the HttpSecurity to configure
+     * @return the built SecurityFilterChain
+     * @throws Exception when the underlying configuration fails
+     */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -81,6 +112,15 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Create a CORS configuration source based on the configured allowed origins.
+     *
+     * This allows the frontend (running on different origins in development) to make
+     * requests that include credentials. The allowed origins are read from
+     * the application property app.cors.allowed-origins.
+     *
+     * @return configured CorsConfigurationSource
+     */
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

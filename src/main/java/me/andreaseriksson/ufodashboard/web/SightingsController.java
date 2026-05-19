@@ -85,7 +85,7 @@ public class SightingsController {
      * @param south southern latitude boundary (optional)
      * @param east eastern longitude boundary (optional)
      * @param west western longitude boundary (optional)
-     * @param countryCode filter by country code, or {@code __other__} for non-standard countries (optional)
+     * @param countryCode filter by country code, or __other__ for non-standard countries (optional)
      * @param shapeName filter by UFO shape name (optional)
      * @param limit maximum number of sightings to return (default: 3000)
      * @return a ResponseEntity containing a list of sightings within the viewport and filters

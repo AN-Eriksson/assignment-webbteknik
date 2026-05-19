@@ -13,8 +13,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * list is populated (sightings, shapes, or locations).
  *
  * HATEOAS Structure:
- *   _embedded: contains the actual list of items ({@link Embedded})
- *   _links: contains navigation links to other pages and related resources ({@link Links})
+ *   _embedded: contains the actual list of items (Embedded)
+ *   _links: contains navigation links to other pages and related resources (Links)
  *
  * Type parameter T is the item type within the embedded list (typically SightingResponse,
  * ShapeResponse, or LocationResponse).

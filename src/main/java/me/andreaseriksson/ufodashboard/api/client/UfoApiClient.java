@@ -17,8 +17,18 @@ import me.andreaseriksson.ufodashboard.api.dto.ShapeResponse;
 import me.andreaseriksson.ufodashboard.api.dto.SightingResponse;
 
 /**
- * Client for calling the UFO Sightings API (WT1 API).
- * All endpoints are public and require no authentication.
+ * Client for calling the upstream UFO Sightings API (WT1 API).
+ *
+ * This service is a thin HTTP client that uses RestTemplate to perform paged
+ * requests to the upstream API. The client's base URL is injected from the
+ * application property ufo.api.base-url.
+ *
+ * Behaviour notes:
+ * - The getSightings method is cached to reduce repeated load on the upstream API.
+ *   The cache key is composed from the page, size and filter parameters so different
+ *   query combinations are cached independently.
+ * - Methods return empty lists when the upstream response body is absent to avoid
+ *   leaking nulls to callers.
  */
 @Service
 public class UfoApiClient {
@@ -26,6 +36,11 @@ public class UfoApiClient {
     private final RestTemplate restTemplate;
     private final String baseUrl;
 
+    /**
+     * Construct a new client with the configured base URL.
+     *
+     * @param baseUrl the base URL of the upstream UFO API (injected from configuration)
+     */
     public UfoApiClient(@Value("${ufo.api.base-url}") String baseUrl) {
         this.restTemplate = new RestTemplate();
         this.baseUrl = baseUrl;
@@ -34,13 +49,17 @@ public class UfoApiClient {
     /**
      * Get paginated list of sightings with optional filters.
      *
+     * The result is cached in the sightings cache using a key composed from the
+     * page, size and filter parameters. When the upstream API returns an empty or
+     * missing body an empty list is returned to the caller.
+     *
      * @param page zero-indexed page number
      * @param size page size
      * @param city filter by city (optional)
      * @param state filter by state (optional)
      * @param countryCode filter by country code (optional)
      * @param shapeName filter by UFO shape name (optional)
-     * @return list of sightings
+     * @return list of sightings (may be empty)
      */
     @Cacheable(value = "sightings", key = "#page + '_' + #size + '_' + #city + '_' + #state + '_' + #countryCode + '_' + #shapeName")
     public List<SightingResponse> getSightings(int page, int size, String city, String state,
@@ -68,6 +87,9 @@ public class UfoApiClient {
 
     /**
      * Get a single sighting by ID.
+     *
+     * @param id unique identifier of the sighting
+     * @return the sighting details or null if the upstream service returns no content
      */
     public SightingResponse getSightingById(Long id) {
         String url = baseUrl + "/sightings/" + id;
@@ -75,7 +97,11 @@ public class UfoApiClient {
     }
 
     /**
-     * Get paginated list of shapes.
+     * Get paginated list of UFO shape classifications.
+     *
+     * @param page zero-indexed page number
+     * @param size page size
+     * @return list of shape records (may be empty)
      */
     public List<ShapeResponse> getShapes(int page, int size) {
         String url = UriComponentsBuilder.fromUriString(baseUrl)
@@ -97,6 +123,9 @@ public class UfoApiClient {
 
     /**
      * Get a single shape by ID.
+     *
+     * @param id the shape identifier
+     * @return shape details or null if not found
      */
     public ShapeResponse getShapeById(Long id) {
         String url = baseUrl + "/shapes/" + id;
@@ -104,7 +133,11 @@ public class UfoApiClient {
     }
 
     /**
-     * Get paginated list of locations.
+     * Get paginated list of geographic locations (cities/states/countries).
+     *
+     * @param page zero-indexed page number
+     * @param size page size
+     * @return list of locations (may be empty)
      */
     public List<LocationResponse> getLocations(int page, int size) {
         String url = UriComponentsBuilder.fromUriString(baseUrl)
@@ -126,6 +159,9 @@ public class UfoApiClient {
 
     /**
      * Get a single location by ID.
+     *
+     * @param id the location identifier
+     * @return location details or null if not found
      */
     public LocationResponse getLocationById(Long id) {
         String url = baseUrl + "/locations/" + id;
