@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3147:8080"
+    restart: unless-stopped
     environment:
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
